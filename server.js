@@ -7,19 +7,28 @@ app.use(express.json());
 
 const {
   UCS_PROJECT_ID,
+  UCS_ENV_ID,      // 👈 NUEVO: Environment ID (p.ej. production)
   UCS_KEY_ID,
   UCS_SECRET_KEY
 } = process.env;
 
-if (!UCS_PROJECT_ID || !UCS_KEY_ID || !UCS_SECRET_KEY) {
-  console.error("Faltan variables de entorno UCS_PROJECT_ID, UCS_KEY_ID, UCS_SECRET_KEY");
+if (!UCS_PROJECT_ID || !UCS_ENV_ID || !UCS_KEY_ID || !UCS_SECRET_KEY) {
+  console.error("Faltan variables de entorno: UCS_PROJECT_ID, UCS_ENV_ID, UCS_KEY_ID, UCS_SECRET_KEY");
   process.exit(1);
 }
 
 // Auth básico para Admin APIs (KEY_ID:SECRET_KEY)
 const basic = "Basic " + Buffer.from(`${UCS_KEY_ID}:${UCS_SECRET_KEY}`).toString("base64");
+
 // Host típico de Cloud Save Admin API (ajústalo si tu doc indica otro)
 const BASE = "https://cloud-save.services.api.unity.com";
+// Prefijo con proyecto + environment
+const PREFIX = `/v1/projects/${UCS_PROJECT_ID}/environments/${UCS_ENV_ID}`;
+
+// Página raíz informativa
+app.get("/", (req, res) =>
+  res.send("OK  Usa /files?playerId=... o /files/url?playerId=...&file=...")
+);
 
 // Lista ficheros del jugador
 app.get("/files", async (req, res) => {
@@ -27,9 +36,9 @@ app.get("/files", async (req, res) => {
     const { playerId } = req.query;
     if (!playerId) return res.status(400).json({ error: "playerId requerido" });
 
-    const url = `${BASE}/v1/projects/${UCS_PROJECT_ID}/players/${encodeURIComponent(playerId)}/files`;
+    const url = `${BASE}${PREFIX}/players/${encodeURIComponent(playerId)}/files`;
     const r = await fetch(url, { headers: { Authorization: basic } });
-    if (!r.ok) return res.status(r.status).json(await r.json()).end();
+    if (!r.ok) return res.status(r.status).json(await r.json());
     const data = await r.json(); // [{key,size,contentType,updatedAt},...]
     res.json(data);
   } catch (e) {
@@ -43,9 +52,9 @@ app.get("/files/url", async (req, res) => {
     const { playerId, file } = req.query;
     if (!playerId || !file) return res.status(400).json({ error: "playerId y file requeridos" });
 
-    const url = `${BASE}/v1/projects/${UCS_PROJECT_ID}/players/${encodeURIComponent(playerId)}/files/${encodeURIComponent(file)}/download-url`;
+    const url = `${BASE}${PREFIX}/players/${encodeURIComponent(playerId)}/files/${encodeURIComponent(file)}/download-url`;
     const r = await fetch(url, { method: "POST", headers: { Authorization: basic } });
-    if (!r.ok) return res.status(r.status).json(await r.json()).end();
+    if (!r.ok) return res.status(r.status).json(await r.json());
     const data = await r.json(); // { url, expiresAt }
     res.json(data);
   } catch (e) {
