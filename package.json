@@ -1,0 +1,14 @@
+{
+  "name": "unity-cloudsave-proxy",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Minimal proxy to list and fetch signed download URLs for Unity Cloud Save Files",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
